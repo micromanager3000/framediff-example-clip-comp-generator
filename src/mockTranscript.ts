@@ -1,0 +1,31 @@
+import type { TimedTranscriptWordSnapshot } from "@framediff/studio-model";
+
+/** Deterministic stand-in for a provider-normalized word-timing response. */
+export const MOCK_TRANSCRIPT: TimedTranscriptWordSnapshot[] = [
+  { id: "w01", text: "Watch", start: .50, end: .72, speaker: "Narrator" },
+  { id: "w02", text: "the", start: .77, end: .99, speaker: "Narrator" },
+  { id: "w03", text: "garden", start: 1.04, end: 1.26, speaker: "Narrator" },
+  { id: "w04", text: "wake", start: 1.31, end: 1.53, speaker: "Narrator" },
+  { id: "w05", text: "up", start: 1.58, end: 1.80, speaker: "Narrator" },
+  { id: "w06", text: "as", start: 1.85, end: 2.07, speaker: "Narrator" },
+  { id: "w07", text: "white", start: 2.12, end: 2.34, speaker: "Narrator" },
+  { id: "w08", text: "petals", start: 2.39, end: 2.61, speaker: "Narrator" },
+  { id: "w09", text: "open", start: 2.66, end: 2.88, speaker: "Narrator" },
+  { id: "w10", text: "into", start: 2.93, end: 3.15, speaker: "Narrator" },
+  { id: "w11", text: "morning", start: 3.20, end: 3.42, speaker: "Narrator" },
+  { id: "w12", text: "light.", start: 3.47, end: 3.69, speaker: "Narrator" },
+  { id: "w13", text: "Tiny", start: 8.33, end: 8.55, speaker: "Narrator" },
+  { id: "w14", text: "changes", start: 8.60, end: 8.82, speaker: "Narrator" },
+  { id: "w15", text: "in", start: 8.87, end: 9.09, speaker: "Narrator" },
+  { id: "w16", text: "color", start: 9.14, end: 9.36, speaker: "Narrator" },
+  { id: "w17", text: "move", start: 9.41, end: 9.63, speaker: "Narrator" },
+  { id: "w18", text: "across", start: 9.68, end: 9.90, speaker: "Narrator" },
+  { id: "w19", text: "petals", start: 9.95, end: 10.17, speaker: "Narrator" },
+  { id: "w20", text: "while", start: 10.22, end: 10.44, speaker: "Narrator" },
+  { id: "w21", text: "green", start: 10.49, end: 10.71, speaker: "Narrator" },
+  { id: "w22", text: "stems", start: 10.76, end: 10.98, speaker: "Narrator" },
+  { id: "w23", text: "stay", start: 11.03, end: 11.25, speaker: "Narrator" },
+  { id: "w24", text: "soft", start: 11.30, end: 11.52, speaker: "Narrator" },
+  { id: "w25", text: "behind", start: 11.57, end: 11.79, speaker: "Narrator" },
+  { id: "w26", text: "them.", start: 11.84, end: 12.06, speaker: "Narrator" },
+];
