@@ -13,6 +13,10 @@ FrameDiff is pinned in `vendor/framediff` until its packages are published to np
 pin with `git submodule update --remote vendor/framediff`, then validate and commit the gitlink.
 
 This focused example starts with one untranscribed Clip composition and one empty Edit composition.
+Import a video from disk or choose one already in the Media library; disk imports are added to
+`framediff.assets.json` before becoming the Clip source. The **Transcribe video** action uses the
+ElevenLabs key configured under **Services** and calls Scribe v2 through FrameDiff's local dev bridge,
+so the credential never enters the composition document or browser response.
 
 1. Open `Garden Selects`.
 2. Drag across the source filmstrip or switch to **Frame grid** to make a visual selection without a transcript.

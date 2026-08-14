@@ -6,15 +6,20 @@ const exampleRoot = fileURLToPath(new URL("../../", import.meta.url));
 const configFile = `${exampleRoot}src/config.ts`;
 const collectionFile = `${exampleRoot}src/compositions/GardenSelects.clips.json`;
 const assemblyTimelineFile = `${exampleRoot}src/compositions/Assembly.timeline.json`;
+const assetManifestFile = `${exampleRoot}framediff.assets.json`;
+const assetsDirectory = `${exampleRoot}assets`;
+const sourceVideoFile = `${exampleRoot}static/garden-observation.mp4`;
 const generatedDirectory = `${exampleRoot}src/generated-clips`;
 const exampleUrl = process.env.FRAMEDIFF_CLIP_EXAMPLE_URL ?? "http://127.0.0.1:4181/";
 let originals: Record<string, string>;
 let originalGeneratedFiles = new Set<string>();
+let originalAssetFiles = new Set<string>();
 
 test.beforeAll(async () => {
-  originals = Object.fromEntries(await Promise.all([configFile, collectionFile, assemblyTimelineFile]
+  originals = Object.fromEntries(await Promise.all([configFile, collectionFile, assemblyTimelineFile, assetManifestFile]
     .map(async (file) => [file, await readFile(file, "utf8")] as const)));
   originalGeneratedFiles = new Set(await readdir(generatedDirectory).catch(() => []));
+  originalAssetFiles = new Set(await readdir(assetsDirectory).catch(() => []));
 });
 
 test.afterAll(async () => {
@@ -23,22 +28,99 @@ test.afterAll(async () => {
   await Promise.all(generatedFiles
     .filter((file) => !originalGeneratedFiles.has(file))
     .map((file) => rm(`${generatedDirectory}/${file}`, { force: true })));
+  const assetFiles = await readdir(assetsDirectory).catch(() => []);
+  await Promise.all(assetFiles
+    .filter((file) => !originalAssetFiles.has(file))
+    .map((file) => rm(`${assetsDirectory}/${file}`, { force: true })));
 });
 
 test("creates visual clips without a transcript, transcribes, creates word clips, and reuses the edits", async ({ page }) => {
   const errors: string[] = [];
+  await page.setViewportSize({ width: 1440, height: 1000 });
   page.on("pageerror", (error) => errors.push(error.message));
+  await page.route("**/__framediff/transcribe?**", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ words: [
+        { id: "w13", text: "Tiny", start: 8.33, end: 8.55 },
+        { id: "w14", text: "changes", start: 8.55, end: 8.82 },
+        { id: "w15", text: "in", start: 8.82, end: 9.02 },
+        { id: "w16", text: "color", start: 9.02, end: 9.31 },
+        { id: "w17", text: "move", start: 9.31, end: 9.63 },
+      ] }),
+    });
+  });
   await page.goto(exampleUrl);
 
   await expect(page.locator(".clip-composition-workbench")).toBeVisible();
+  await expect(page.getByRole("button", { name: "CODE", exact: true })).toHaveCount(0);
+  await page.getByRole("button", { name: "Collapse right panel" }).click();
+  await expect(page.locator(".framediff-studio")).toHaveClass(/right-collapsed/);
+  await expect(page.locator(".right-panel")).toBeHidden();
+  await page.getByRole("button", { name: "Open Inspector panel" }).click();
+  await expect(page.locator(".right-panel")).toBeVisible();
+  await page.getByRole("button", { name: "Collapse left panel" }).click();
+  await expect(page.locator(".framediff-studio")).toHaveClass(/left-collapsed/);
+  await expect(page.locator(".left-panel")).toBeHidden();
+  await page.getByRole("button", { name: "Open compositions and media" }).click();
+  await expect(page.locator(".left-panel")).toBeVisible();
   await expect(page.locator(".clip-transcript-empty")).toContainText("No transcript yet");
-  await expect(page.locator(".clip-filmstrip .video-frame-thumbnail")).toHaveCount(12);
+  await expect(page.locator(".clip-source-filmstrip .video-frame-thumbnail")).toHaveCount(12);
   await expect(page.locator(".generated-clips-empty")).toContainText("No clips yet");
+  await expect(page.getByRole("button", { name: "+ ADD CLIP" })).toHaveCount(0);
+
+  const playerBeforeResize = await page.locator(".clip-source-player-shell").boundingBox();
+  const browserSplitter = page.getByTestId("clip-browser-splitter");
+  const browserSplitterBox = await browserSplitter.boundingBox();
+  expect(playerBeforeResize).not.toBeNull();
+  expect(browserSplitterBox).not.toBeNull();
+  await page.mouse.move(browserSplitterBox!.x + browserSplitterBox!.width / 2, browserSplitterBox!.y + browserSplitterBox!.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(browserSplitterBox!.x + browserSplitterBox!.width / 2, browserSplitterBox!.y + 44, { steps: 6 });
+  await page.mouse.up();
+  await expect.poll(async () => (await page.locator(".clip-source-player-shell").boundingBox())?.height ?? 0).toBeGreaterThan(playerBeforeResize!.height + 20);
+
+  const sourceBrowserBeforeResize = await page.locator(".clip-source-browser").boundingBox();
+  const clipsSplitter = page.getByTestId("clip-clips-splitter");
+  const clipsSplitterBox = await clipsSplitter.boundingBox();
+  expect(sourceBrowserBeforeResize).not.toBeNull();
+  expect(clipsSplitterBox).not.toBeNull();
+  await page.mouse.move(clipsSplitterBox!.x + clipsSplitterBox!.width / 2, clipsSplitterBox!.y + clipsSplitterBox!.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(clipsSplitterBox!.x + clipsSplitterBox!.width / 2, clipsSplitterBox!.y - 44, { steps: 6 });
+  await page.mouse.up();
+  await expect.poll(async () => (await page.locator(".clip-source-browser").boundingBox())?.height ?? 0).toBeLessThan(sourceBrowserBeforeResize!.height - 20);
+
+  await page.locator('input[type="file"][accept="video/*"]').setInputFiles(sourceVideoFile);
+  await expect.poll(async () => JSON.parse(await readFile(assetManifestFile, "utf8")).assets).not.toEqual({});
+  await expect.poll(async () => JSON.parse(await readFile(collectionFile, "utf8")).source.assetId).toBeTruthy();
+  await expect(page.locator(".clip-browser-header")).toContainText("garden-observation.mp4");
+  const importedAssetId = JSON.parse(await readFile(collectionFile, "utf8")).source.assetId as string;
+  await page.getByRole("button", { name: "MEDIA", exact: true }).click();
+  await page.locator(`.asset-row[title*="asset://${importedAssetId}"]`).dragTo(page.locator(".clip-source-player-shell"));
+  await expect.poll(async () => JSON.parse(await readFile(collectionFile, "utf8")).source.assetId).toBe(importedAssetId);
+  await page.getByRole("button", { name: "COMPS", exact: true }).click();
 
   await page.getByRole("tab", { name: "FRAME GRID" }).click();
   await expect(page.locator(".clip-frame-grid > button")).toHaveCount(16);
-  await page.getByLabel("Select range on source timeline").fill("9.5");
+  const filmstrip = page.getByTestId("clip-source-timeline");
+  const filmstripBox = await filmstrip.boundingBox();
+  expect(filmstripBox).not.toBeNull();
+  await page.mouse.move(filmstripBox!.x + filmstripBox!.width * .56, filmstripBox!.y + filmstripBox!.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(filmstripBox!.x + filmstripBox!.width * .78, filmstripBox!.y + filmstripBox!.height / 2, { steps: 8 });
+  await page.mouse.up();
   await expect(page.locator(".clip-range-readout")).toContainText("VISUAL RANGE");
+  await expect(page.getByRole("button", { name: "+ ADD CLIP" })).toBeVisible();
+  await page.locator(".clip-browser-header").click();
+  await expect(page.locator(".clip-range-selection")).toHaveCount(0);
+  await expect(page.locator(".clip-frame-grid > button.selected")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "+ ADD CLIP" })).toHaveCount(0);
+  await page.mouse.move(filmstripBox!.x + filmstripBox!.width * .56, filmstripBox!.y + filmstripBox!.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(filmstripBox!.x + filmstripBox!.width * .78, filmstripBox!.y + filmstripBox!.height / 2, { steps: 8 });
+  await page.mouse.up();
+  await expect(page.getByRole("button", { name: "+ ADD CLIP" })).toBeVisible();
   await page.getByRole("button", { name: "+ ADD CLIP" }).click();
 
   await expect.poll(async () => JSON.parse(await readFile(collectionFile, "utf8")).clips.length).toBe(1);
@@ -47,6 +129,7 @@ test("creates visual clips without a transcript, transcribes, creates word clips
   expect(visualCollection.clips[0].originalRange[0]).toBeGreaterThan(2);
   expect(visualCollection.clips[0].originalRange[1]).toBeGreaterThan(visualCollection.clips[0].originalRange[0]);
   await expect(page.locator(".generated-clip-card")).toHaveCount(1);
+  await expect(page.getByRole("button", { name: "+ ADD CLIP" })).toHaveCount(0);
   await expect(page.locator(".generated-clip-card .video-frame-thumbnail video")).toHaveCount(1);
   await expect.poll(() => page.locator(".generated-clip-card video").evaluate((video: HTMLVideoElement) => video.currentTime)).toBeGreaterThan(2);
 
@@ -72,7 +155,7 @@ test("creates visual clips without a transcript, transcribes, creates word clips
 
   await expect.poll(async () => JSON.parse(await readFile(collectionFile, "utf8")).clips.length).toBe(2);
   const transcribedCollection = JSON.parse(await readFile(collectionFile, "utf8"));
-  expect(transcribedCollection.words).toHaveLength(26);
+  expect(transcribedCollection.words).toHaveLength(5);
   expect(transcribedCollection.clips[1]).toMatchObject({
     selectedWordIds: ["w13", "w14", "w15", "w16", "w17"],
     originalRange: [8.33, 9.63],
