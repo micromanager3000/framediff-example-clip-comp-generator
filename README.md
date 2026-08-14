@@ -1,5 +1,17 @@
 # Clip Comp Generator
 
+## Setup
+
+```sh
+git clone --recurse-submodules https://github.com/micromanager3000/framediff-example-clip-comp-generator.git
+cd framediff-example-clip-comp-generator
+npm install
+npm run dev
+```
+
+FrameDiff is pinned in `vendor/framediff` until its packages are published to npm. Update the
+pin with `git submodule update --remote vendor/framediff`, then validate and commit the gitlink.
+
 This focused example starts with one untranscribed Clip composition and one empty Edit composition.
 
 1. Open `Garden Selects`.
@@ -12,5 +24,5 @@ This focused example starts with one untranscribed Clip composition and one empt
 The provider hook is public and provider-neutral. This example returns a fabricated normalized transcript after a short delay; the bundled garden video stays local, so no upload or paid API request occurs.
 
 ```sh
-npm run dev --workspace @framediff/example-clip-comp-generator -- --host 0.0.0.0
+npm run dev -- --host 0.0.0.0
 ```

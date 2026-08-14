@@ -13,9 +13,9 @@
     "typecheck": "npm run check"
   },
   "dependencies": {
-    "@framediff/studio-model": "*",
-    "@framediff/studio-ui": "*",
-    "framediff": "*"
+    "@framediff/studio-model": "file:vendor/framediff/packages/studio-model",
+    "@framediff/studio-ui": "file:vendor/framediff/packages/studio-ui",
+    "framediff": "file:vendor/framediff/packages/framediff"
   },
   "devDependencies": {
     "@sveltejs/adapter-static": "^3.0.10",

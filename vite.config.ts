@@ -1,7 +1,7 @@
 import { fileURLToPath, URL } from "node:url";
 import { sveltekit } from "@sveltejs/kit/vite";
 import { defineConfig } from "vite";
-import { framediffDev } from "../../packages/framediff/vite-plugin.ts";
+import { framediffDev } from "./vendor/framediff/packages/framediff/vite-plugin.ts";
 
 export default defineConfig({
   plugins: [sveltekit(), framediffDev()],
@@ -9,8 +9,8 @@ export default defineConfig({
   resolve: {
     dedupe: ["svelte"],
     alias: [
-      { find: /^framediff$/, replacement: fileURLToPath(new URL("../../packages/framediff/src/index.ts", import.meta.url)) },
-      { find: /^framediff\/vite$/, replacement: fileURLToPath(new URL("../../packages/framediff/vite-plugin.ts", import.meta.url)) }
+      { find: /^framediff$/, replacement: fileURLToPath(new URL("./vendor/framediff/packages/framediff/src/index.ts", import.meta.url)) },
+      { find: /^framediff\/vite$/, replacement: fileURLToPath(new URL("./vendor/framediff/packages/framediff/vite-plugin.ts", import.meta.url)) }
     ]
   }
 });
