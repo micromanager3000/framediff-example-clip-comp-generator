@@ -1,0 +1,29 @@
+{
+  "name": "@framediff/example-clip-comp-generator",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "A focused FrameDiff Clip composition example with transcript-selected generated Edit comps.",
+  "scripts": {
+    "prepare": "svelte-kit sync",
+    "dev": "vite dev --host 0.0.0.0",
+    "build": "vite build",
+    "preview": "vite preview --host 0.0.0.0",
+    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+    "typecheck": "npm run check"
+  },
+  "dependencies": {
+    "@framediff/studio-model": "*",
+    "@framediff/studio-ui": "*",
+    "framediff": "*"
+  },
+  "devDependencies": {
+    "@sveltejs/adapter-static": "^3.0.10",
+    "@sveltejs/kit": "^2.70.2",
+    "@sveltejs/vite-plugin-svelte": "^7.3.0",
+    "svelte": "^5.56.9",
+    "svelte-check": "^4.7.5",
+    "typescript": "^6.0.3",
+    "vite": "^8.2.1"
+  }
+}
