@@ -10,7 +10,8 @@
     "build": "vite build",
     "preview": "vite preview --host 0.0.0.0",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
-    "typecheck": "npm run check"
+    "typecheck": "npm run check",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@framediff/studio-model": "file:vendor/framediff/packages/studio-model",
@@ -18,6 +19,7 @@
     "framediff": "file:vendor/framediff/packages/framediff"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.1",
     "@sveltejs/adapter-static": "^3.0.10",
     "@sveltejs/kit": "^2.70.2",
     "@sveltejs/vite-plugin-svelte": "^7.3.0",
