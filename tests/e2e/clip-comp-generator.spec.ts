@@ -10,6 +10,13 @@ const assetManifestFile = `${exampleRoot}framediff.assets.json`;
 const assetsDirectory = `${exampleRoot}assets`;
 const sourceVideoFile = `${exampleRoot}static/garden-observation.mp4`;
 const generatedDirectory = `${exampleRoot}src/generated-clips`;
+const creationSmokeFiles = [
+  `${exampleRoot}src/ClipCreateSmoke.html`,
+  `${exampleRoot}src/ClipCreateSmoke.ts`,
+  `${exampleRoot}src/ClipCreateSmoke.comp.json`,
+  `${exampleRoot}src/ClipCreateSmoke.schema.json`,
+  `${exampleRoot}src/ClipCreateSmoke.timeline.json`,
+];
 const exampleUrl = process.env.FRAMEDIFF_CLIP_EXAMPLE_URL ?? "http://127.0.0.1:4181/";
 let originals: Record<string, string>;
 let originalGeneratedFiles = new Set<string>();
@@ -22,8 +29,9 @@ test.beforeAll(async () => {
   originalAssetFiles = new Set(await readdir(assetsDirectory).catch(() => []));
 });
 
-test.afterAll(async () => {
+test.afterEach(async () => {
   await Promise.all(Object.entries(originals).map(([file, text]) => writeFile(file, text)));
+  await Promise.all(creationSmokeFiles.map((file) => rm(file, { force: true })));
   const generatedFiles = await readdir(generatedDirectory).catch(() => []);
   await Promise.all(generatedFiles
     .filter((file) => !originalGeneratedFiles.has(file))
@@ -32,6 +40,30 @@ test.afterAll(async () => {
   await Promise.all(assetFiles
     .filter((file) => !originalAssetFiles.has(file))
     .map((file) => rm(`${assetsDirectory}/${file}`, { force: true })));
+});
+
+test("prefills the composition name and creates the selected starter", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto(exampleUrl);
+  await page.getByRole("button", { name: "Create a new composition" }).click();
+
+  const dialog = page.getByRole("dialog", { name: "New composition" });
+  const name = dialog.getByRole("textbox", { name: "Name" });
+  const create = dialog.getByRole("button", { name: "Create", exact: true });
+  await expect(name).toHaveValue("TitleCard");
+  await expect(create).toBeEnabled();
+
+  await dialog.getByText("Clip", { exact: true }).click();
+  await expect(name).toHaveValue("Selects");
+  await name.fill("ClipCreateSmoke");
+  await dialog.getByText("Scene", { exact: true }).click();
+  await expect(name).toHaveValue("ClipCreateSmoke");
+  await dialog.getByText("Clip", { exact: true }).click();
+  await create.click();
+
+  await expect(dialog).toBeHidden();
+  await expect(page.locator('.composition-row[data-composition-key="clip-create-smoke"]')).toBeVisible();
+  await expect.poll(async () => readFile(configFile, "utf8")).toContain('"clip-create-smoke"');
 });
 
 test("creates visual clips without a transcript, transcribes, creates word clips, and reuses the edits", async ({ page }) => {
