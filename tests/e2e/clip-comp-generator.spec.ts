@@ -10,8 +10,9 @@ const assetManifestFile = `${exampleRoot}framediff.assets.json`;
 const assetsDirectory = `${exampleRoot}assets`;
 const sourceVideoFile = `${exampleRoot}static/garden-observation.mp4`;
 const generatedDirectory = `${exampleRoot}src/generated-clips`;
+const creationSmokeHtmlFile = `${exampleRoot}src/ClipCreateSmoke.html`;
 const creationSmokeFiles = [
-  `${exampleRoot}src/ClipCreateSmoke.html`,
+  creationSmokeHtmlFile,
   `${exampleRoot}src/ClipCreateSmoke.ts`,
   `${exampleRoot}src/ClipCreateSmoke.comp.json`,
   `${exampleRoot}src/ClipCreateSmoke.schema.json`,
@@ -52,6 +53,8 @@ test("prefills the composition name and creates the selected starter", async ({ 
   const create = dialog.getByRole("button", { name: "Create", exact: true });
   await expect(name).toHaveValue("TitleCard");
   await expect(create).toBeEnabled();
+  await expect(dialog.getByText("Duration", { exact: true })).toHaveCount(0);
+  await expect(dialog.locator('input[type="number"]')).toHaveCount(0);
 
   await dialog.getByText("Clip", { exact: true }).click();
   await expect(name).toHaveValue("Selects");
@@ -64,6 +67,7 @@ test("prefills the composition name and creates the selected starter", async ({ 
   await expect(dialog).toBeHidden();
   await expect(page.locator('.composition-row[data-composition-key="clip-create-smoke"]')).toBeVisible();
   await expect.poll(async () => readFile(configFile, "utf8")).toContain('"clip-create-smoke"');
+  await expect.poll(async () => readFile(creationSmokeHtmlFile, "utf8")).toContain('data-fd-duration="150"');
 });
 
 test("creates visual clips without a transcript, transcribes, creates word clips, and reuses the edits", async ({ page }) => {
