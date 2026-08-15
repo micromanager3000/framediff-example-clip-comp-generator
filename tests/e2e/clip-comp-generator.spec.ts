@@ -70,6 +70,36 @@ test("prefills the composition name and creates the selected starter", async ({ 
   await expect.poll(async () => readFile(creationSmokeHtmlFile, "utf8")).toContain('data-fd-duration="150"');
 });
 
+test("collapsing the left panel preserves workspace grid placement", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto(exampleUrl);
+
+  const workspace = page.locator(".workspace");
+  const rightPanel = page.locator(".right-panel");
+  const before = await workspace.boundingBox();
+  const rightBefore = await rightPanel.boundingBox();
+  expect(before).not.toBeNull();
+  expect(rightBefore).not.toBeNull();
+
+  await page.getByRole("button", { name: "Collapse left panel" }).click();
+  await expect(page.locator(".left-panel")).toBeHidden();
+  await expect(page.getByRole("button", { name: "Open compositions and media" })).toBeVisible();
+
+  const collapsed = await workspace.boundingBox();
+  const rightCollapsed = await rightPanel.boundingBox();
+  expect(collapsed).not.toBeNull();
+  expect(rightCollapsed).not.toBeNull();
+  expect(collapsed!.x).toBeLessThanOrEqual(1);
+  expect(collapsed!.width).toBeGreaterThan(before!.width + 200);
+  expect(rightCollapsed!.x).toBeCloseTo(collapsed!.x + collapsed!.width, 0);
+  expect(rightCollapsed!.width).toBeCloseTo(rightBefore!.width, 0);
+
+  await page.getByRole("button", { name: "Open compositions and media" }).click();
+  await expect(page.locator(".left-panel")).toBeVisible();
+  await expect.poll(async () => workspace.boundingBox()).toEqual(before);
+  await expect.poll(async () => rightPanel.boundingBox()).toEqual(rightBefore);
+});
+
 test("creates visual clips without a transcript, transcribes, creates word clips, and reuses the edits", async ({ page }) => {
   const errors: string[] = [];
   const requestedModels: string[] = [];
