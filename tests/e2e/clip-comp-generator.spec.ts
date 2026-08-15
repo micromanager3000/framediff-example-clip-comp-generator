@@ -70,7 +70,7 @@ test("prefills the composition name and creates the selected starter", async ({ 
   await expect.poll(async () => readFile(creationSmokeHtmlFile, "utf8")).toContain('data-fd-duration="150"');
 });
 
-test("collapsing the left panel preserves workspace grid placement", async ({ page }) => {
+test("collapsed left panel exposes an edge control that restores its grid placement", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto(exampleUrl);
 
@@ -84,18 +84,26 @@ test("collapsing the left panel preserves workspace grid placement", async ({ pa
   await page.getByRole("button", { name: "Collapse left panel" }).click();
   await expect(page.locator(".left-panel")).toBeHidden();
   await expect(page.getByRole("button", { name: "Open compositions and media" })).toBeVisible();
+  const expandLeft = page.getByRole("button", { name: "Expand left panel" });
+  await expect(expandLeft).toBeVisible();
 
   const collapsed = await workspace.boundingBox();
   const rightCollapsed = await rightPanel.boundingBox();
+  const expandBox = await expandLeft.boundingBox();
   expect(collapsed).not.toBeNull();
   expect(rightCollapsed).not.toBeNull();
+  expect(expandBox).not.toBeNull();
   expect(collapsed!.x).toBeLessThanOrEqual(1);
   expect(collapsed!.width).toBeGreaterThan(before!.width + 200);
   expect(rightCollapsed!.x).toBeCloseTo(collapsed!.x + collapsed!.width, 0);
   expect(rightCollapsed!.width).toBeCloseTo(rightBefore!.width, 0);
+  expect(expandBox!.x).toBeLessThanOrEqual(1);
+  expect(expandBox!.width).toBeGreaterThanOrEqual(28);
+  expect(expandBox!.height).toBeGreaterThanOrEqual(38);
 
-  await page.getByRole("button", { name: "Open compositions and media" }).click();
+  await expandLeft.click();
   await expect(page.locator(".left-panel")).toBeVisible();
+  await expect(expandLeft).toHaveCount(0);
   await expect.poll(async () => workspace.boundingBox()).toEqual(before);
   await expect.poll(async () => rightPanel.boundingBox()).toEqual(rightBefore);
 });
