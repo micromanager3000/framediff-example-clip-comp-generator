@@ -72,12 +72,19 @@ test("prefills the composition name and creates the selected starter", async ({ 
 
 test("creates visual clips without a transcript, transcribes, creates word clips, and reuses the edits", async ({ page }) => {
   const errors: string[] = [];
+  const requestedModels: string[] = [];
   await page.setViewportSize({ width: 1440, height: 1000 });
   page.on("pageerror", (error) => errors.push(error.message));
   await page.route("**/__framediff/transcribe?**", async (route) => {
+    const model = new URL(route.request().url()).searchParams.get("model") ?? "";
+    requestedModels.push(model);
     await route.fulfill({
       contentType: "application/json",
-      body: JSON.stringify({ words: [
+      body: JSON.stringify({ words: model === "scribe_v1" ? [
+        { id: "legacy-1", text: "A", start: 4, end: 4.2 },
+        { id: "legacy-2", text: "legacy", start: 4.2, end: 4.6 },
+        { id: "legacy-3", text: "take", start: 4.6, end: 5 },
+      ] : [
         { id: "w13", text: "Tiny", start: 8.33, end: 8.55 },
         { id: "w14", text: "changes", start: 8.55, end: 8.82 },
         { id: "w15", text: "in", start: 8.82, end: 9.02 },
@@ -174,8 +181,26 @@ test("creates visual clips without a transcript, transcribes, creates word clips
   await page.reload();
   await expect(page.locator(".generated-clip-card")).toHaveCount(1);
   await page.getByRole("tab", { name: "TRANSCRIPT" }).click();
-  await page.getByRole("button", { name: "TRANSCRIBE VIDEO" }).click();
+  const model = page.getByRole("combobox", { name: "Transcription model" });
+  await expect(model).toHaveValue("scribe_v2");
+  await expect(page.locator(".clip-transcription-estimate")).toContainText("<$0.01 estimated");
+  await expect(page.locator(".clip-transcription-estimate")).toContainText("$0.22/hour");
+  await page.getByRole("button", { name: /TRANSCRIBE TAKE/ }).click();
   await expect(page.locator('[data-word-id="w13"]')).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByRole("button", { name: /TAKE 1.*Scribe v2.*IN USE/ })).toBeVisible();
+  await model.selectOption("scribe_v1");
+  await expect(page.locator(".clip-transcription-estimate")).toContainText("Estimate unavailable");
+  await page.getByRole("button", { name: /TRANSCRIBE TAKE/ }).click();
+  await expect(page.locator('[data-word-id="legacy-1"]')).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByRole("button", { name: /TAKE 2.*Scribe v1.*IN USE/ })).toBeVisible();
+  await page.getByRole("button", { name: /TAKE 1.*Scribe v2/ }).click();
+  await expect.poll(async () => JSON.parse(await readFile(collectionFile, "utf8")).activeTranscriptTakeId).toBe("transcript-take-1");
+  await page.waitForTimeout(500);
+  await browserSplitter.press("ArrowUp");
+  await browserSplitter.press("ArrowUp");
+  await browserSplitter.press("ArrowUp");
+  await expect(page.locator('[data-word-id="w13"]')).toBeVisible();
+  expect(requestedModels).toEqual(["scribe_v2", "scribe_v1"]);
   const first = page.locator('[data-word-id="w13"]');
   const last = page.locator('[data-word-id="w17"]');
   const firstBox = await first.boundingBox();
@@ -192,8 +217,11 @@ test("creates visual clips without a transcript, transcribes, creates word clips
   await expect.poll(async () => JSON.parse(await readFile(collectionFile, "utf8")).clips.length).toBe(2);
   const transcribedCollection = JSON.parse(await readFile(collectionFile, "utf8"));
   expect(transcribedCollection.words).toHaveLength(5);
+  expect(transcribedCollection.transcriptTakes).toHaveLength(2);
+  expect(transcribedCollection.activeTranscriptTakeId).toBe("transcript-take-1");
   expect(transcribedCollection.clips[1]).toMatchObject({
     selectedWordIds: ["w13", "w14", "w15", "w16", "w17"],
+    transcriptTakeId: "transcript-take-1",
     originalRange: [8.33, 9.63],
     workingRange: [8.33, 9.63],
   });
