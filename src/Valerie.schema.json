@@ -1,0 +1,30 @@
+{
+  "type": "object",
+  "properties": {
+    "source": {
+      "type": "object",
+      "title": "Source",
+      "properties": {
+        "src": {
+          "type": "string",
+          "title": "Video source"
+        },
+        "durationSeconds": {
+          "type": "number",
+          "title": "Duration",
+          "minimum": 0.001
+        },
+        "width": {
+          "type": "number",
+          "title": "Width",
+          "minimum": 1
+        },
+        "height": {
+          "type": "number",
+          "title": "Height",
+          "minimum": 1
+        }
+      }
+    }
+  }
+}

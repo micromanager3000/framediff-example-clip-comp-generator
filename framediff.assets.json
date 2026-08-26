@@ -1,4 +1,14 @@
 {
   "version": 1,
-  "assets": {}
+  "assets": {
+    "a4ce8869-deff-425a-8047-513fbee1b191": {
+      "name": "valerie_c.mp4",
+      "contentHash": "sha256:7931b041637dff3c614959b853b2720f34a43715e05523bb2a5f47cba71b9a32",
+      "mime": "video/mp4",
+      "bytes": 345299638,
+      "sources": [
+        "/__framediff-cache/sha256%3A7931b041637dff3c614959b853b2720f34a43715e05523bb2a5f47cba71b9a32"
+      ]
+    }
+  }
 }
