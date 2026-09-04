@@ -138,7 +138,7 @@ test("creates visual clips without a transcript, transcribes, creates word clips
   await page.getByRole("button", { name: "Collapse right panel" }).click();
   await expect(page.locator(".framediff-studio")).toHaveClass(/right-collapsed/);
   await expect(page.locator(".right-panel")).toBeHidden();
-  await page.getByRole("button", { name: "Open Inspector panel" }).click();
+  await page.getByRole("button", { name: "Open Agent panel" }).click();
   await expect(page.locator(".right-panel")).toBeVisible();
   await page.getByRole("button", { name: "Collapse left panel" }).click();
   await expect(page.locator(".framediff-studio")).toHaveClass(/left-collapsed/);
@@ -150,16 +150,16 @@ test("creates visual clips without a transcript, transcribes, creates word clips
   await expect(page.locator(".generated-clips-empty")).toContainText("No clips yet");
   await expect(page.getByRole("button", { name: "+ ADD CLIP" })).toHaveCount(0);
 
-  const playerBeforeResize = await page.locator(".clip-source-player-shell").boundingBox();
+  const browserDetailBeforeResize = await page.locator(".clip-browser-detail").boundingBox();
   const browserSplitter = page.getByTestId("clip-browser-splitter");
   const browserSplitterBox = await browserSplitter.boundingBox();
-  expect(playerBeforeResize).not.toBeNull();
+  expect(browserDetailBeforeResize).not.toBeNull();
   expect(browserSplitterBox).not.toBeNull();
   await page.mouse.move(browserSplitterBox!.x + browserSplitterBox!.width / 2, browserSplitterBox!.y + browserSplitterBox!.height / 2);
   await page.mouse.down();
-  await page.mouse.move(browserSplitterBox!.x + browserSplitterBox!.width / 2, browserSplitterBox!.y + 44, { steps: 6 });
+  await page.mouse.move(browserSplitterBox!.x + 44, browserSplitterBox!.y + browserSplitterBox!.height / 2, { steps: 6 });
   await page.mouse.up();
-  await expect.poll(async () => (await page.locator(".clip-source-player-shell").boundingBox())?.height ?? 0).toBeGreaterThan(playerBeforeResize!.height + 20);
+  await expect.poll(async () => (await page.locator(".clip-browser-detail").boundingBox())?.width ?? 0).toBeGreaterThan(browserDetailBeforeResize!.width + 20);
 
   const sourceBrowserBeforeResize = await page.locator(".clip-source-browser").boundingBox();
   const clipsSplitter = page.getByTestId("clip-clips-splitter");
@@ -183,7 +183,7 @@ test("creates visual clips without a transcript, transcribes, creates word clips
   await page.getByRole("button", { name: "COMPS", exact: true }).click();
 
   await page.getByRole("tab", { name: "FRAME GRID" }).click();
-  await expect(page.locator(".clip-frame-grid > button")).toHaveCount(16);
+  await expect(page.locator(".clip-frame-grid > .clip-frame-card")).toHaveCount(16);
   const filmstrip = page.getByTestId("clip-source-timeline");
   const filmstripBox = await filmstrip.boundingBox();
   expect(filmstripBox).not.toBeNull();
@@ -195,7 +195,7 @@ test("creates visual clips without a transcript, transcribes, creates word clips
   await expect(page.getByRole("button", { name: "+ ADD CLIP" })).toBeVisible();
   await page.locator(".clip-browser-header").click();
   await expect(page.locator(".clip-range-selection")).toHaveCount(0);
-  await expect(page.locator(".clip-frame-grid > button.selected")).toHaveCount(0);
+  await expect(page.locator(".clip-frame-grid > .clip-frame-card.selected")).toHaveCount(0);
   await expect(page.getByRole("button", { name: "+ ADD CLIP" })).toHaveCount(0);
   await page.mouse.move(filmstripBox!.x + filmstripBox!.width * .56, filmstripBox!.y + filmstripBox!.height / 2);
   await page.mouse.down();
@@ -234,9 +234,9 @@ test("creates visual clips without a transcript, transcribes, creates word clips
   await page.getByRole("button", { name: /TAKE 1.*Scribe v2/ }).click();
   await expect.poll(async () => JSON.parse(await readFile(collectionFile, "utf8")).activeTranscriptTakeId).toBe("transcript-take-1");
   await page.waitForTimeout(500);
-  await browserSplitter.press("ArrowUp");
-  await browserSplitter.press("ArrowUp");
-  await browserSplitter.press("ArrowUp");
+  await clipsSplitter.press("ArrowUp");
+  await clipsSplitter.press("ArrowUp");
+  await clipsSplitter.press("ArrowUp");
   await expect(page.locator('[data-word-id="w13"]')).toBeVisible();
   expect(requestedModels).toEqual(["scribe_v2", "scribe_v1"]);
   const first = page.locator('[data-word-id="w13"]');
@@ -270,7 +270,7 @@ test("creates visual clips without a transcript, transcribes, creates word clips
   await expect(generatedRow).toBeVisible({ timeout: 20_000 });
   await expect(generatedRow.locator(".ref-role")).toHaveText("CLIP");
   await generatedRow.click();
-  const sourceClip = page.locator('.timeline .clip[data-item-id="source"]');
+  const sourceClip = page.locator('.timeline .clip.clip-video[data-item-id="source"]');
   await expect(sourceClip).toBeVisible();
   const leftHandle = sourceClip.locator(".trim-handle.left");
   const handleBox = await leftHandle.boundingBox();
@@ -285,6 +285,6 @@ test("creates visual clips without a transcript, transcribes, creates word clips
   await expect(page.locator(".generated-clip-card em").nth(1)).toContainText("SOURCE");
   await page.locator('.composition-row[data-composition-key="assembly"]').click();
   await generatedRow.dragTo(page.locator(".timeline .tl-scroll"), { targetPosition: { x: 280, y: 130 } });
-  await expect(page.locator(".timeline .clip-label").filter({ hasText: transcribedCollection.clips[1].compositionKey.split("-").map((part: string) => part[0].toUpperCase() + part.slice(1)).join("") })).toBeVisible();
+  await expect(page.locator(".timeline .clip-video .clip-label").filter({ hasText: transcribedCollection.clips[1].compositionKey })).toBeVisible();
   expect(errors).toEqual([]);
 });
